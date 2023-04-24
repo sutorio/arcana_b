@@ -1,0 +1,12 @@
+[package]
+name = "systems"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["rlib", "dylib"]
+
+[dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy.git" }
+bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
+

@@ -1,4 +1,4 @@
-# `bevydev`
+# `amassment_dev`
 
 ## Overview
 
@@ -11,28 +11,28 @@ A development playground for Bevy, used to test out ideas/techniques prior to co
 > **NOTE:** the main loop and the code the main loop uses are split into separate workspaces. Due to this, dependencies
 > that require config in the main loop must be duplicated across (for example, Rapier's bevy plugins). 
 
-Core code is written in the `systems` workspace. `systems` is a library. The built library code is
+Core code is written in the `amassment_dev_systems` workspace. `amassment_dev_systems` is a library. The built library code is
 dynamically linked to the main game loop defined in `src/main.rs`.
 
 [`cargo-watch`]() is leveraged to automatically rebuild code on changes
 
 Requires two terminals, one to build the systems library, one to run the main loop.
 
-In the first terminal, run:
+In the first terminal, at project root, run:
 
 ```sh
-cargo watch -w systems -x 'build -p systems'
+cargo watch -w amassment_dev -x 'build -p amassment_dev_systems'
 ```
 
 In the second terminal, run:
 
 ```sh
-cargo watch -i systems -x 'run --features reload'
+cargo watch -i amassment_dev_systems -x 'run --features reload'
 ```
 
 ### Process
 
-- For a given feature, develop on `bevydev`. Once complete, transfer across to the finalised set of examples.
+- For a given feature, develop on `amassment_dev`/`amassment_dev_systems`. Once complete, transfer across to the finalised set of examples.
 
 ### IMPORTANT CAVEATS
 

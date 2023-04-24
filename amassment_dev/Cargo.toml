@@ -1,12 +1,7 @@
 [package]
-name = "bevdev"
+name = "amassment_dev"
 version = "0.0.0"
 edition = "2021"
-
-[workspace]
-resolver = "2"
-members = [ "systems" ]
-
 
 # IMPORTANT: Rust's compilation speed will cause acute frustration during rapid iteration phase of dev. [READ THIS](https://bevyengine.org/learn/book/getting-started/setup/).
 # NOTE: Enables a small amount of optimization in debug mode. [READ THIS](https://bevy-cheatbook.github.io/pitfalls/performance.html).
@@ -24,7 +19,7 @@ opt-level = 3
 bevy = { git = "https://github.com/bevyengine/bevy.git" }
 bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
 hot-lib-reloader = { version = "0.6.5", optional = true }
-systems = { path = "systems" } 
+amassment_dev_systems = { path = "../amassment_dev_systems" } 
 
 [features]
 default = []

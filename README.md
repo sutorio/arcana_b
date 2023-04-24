@@ -11,6 +11,7 @@ Leverages [workspaces](https://doc.rust-lang.org/cargo/reference/workspaces.html
 | Workspace | Purpose                     |
 | --------- | --------------------------- |
 | `bevydev` | Bevy development playground |
+| `limn`    | WGSL shader development     |
 
 ### `bevydev`
 

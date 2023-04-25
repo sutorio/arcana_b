@@ -1,7 +1,36 @@
+[package]
+name = "arcana_b"
+version = "0.0.0"
+edition = "2021"
+
 [workspace]
 resolver = "2"
+
 members = [
-  "amassment",
-  "amassment_dev",
-  "amassment_dev_systems",
+  "system_evolution",
 ]
+
+# IMPORTANT: Rust's compilation speed will cause acute frustration during rapid iteration phase of dev. [READ THIS](https://bevyengine.org/learn/book/getting-started/setup/).
+# NOTE: Enables a small amount of optimization in debug mode. [READ THIS](https://bevy-cheatbook.github.io/pitfalls/performance.html).
+# NOTE: The flag improves compile times, but reduces the amount of debug info to 'line number tables only'. In most cases the gains are negligible, but if you are on macos and have slow compile times you should see significant gains.
+[profile.dev]
+opt-level = 1
+
+# NOTE: Enables high optimizations for dependencies only (incl. Bevy):
+[profile.dev.package."*"]
+opt-level = 3
+
+[dependencies]
+bevy = { git = "https://github.com/bevyengine/bevy.git" }
+bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
+hot-lib-reloader = { version = "0.6.5", optional = true }
+system_evolution = { path = "./system_evolution" } 
+
+[features]
+default = []
+
+# IMPORTANT: See https://robert.kra.hn/posts/hot-reloading-rust
+reload = [
+  "dep:hot-lib-reloader",
+]
+

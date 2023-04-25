@@ -2,15 +2,18 @@ use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
 #[cfg(not(feature = "reload"))]
-use amassment_dev_systems::*;
+use system_evolution::*;
 #[cfg(feature = "reload")]
-use amassment_dev_systems_hot::*;
+use system_evolution_hot::*;
 
+#[allow(unused_imports)]
 #[cfg(feature = "reload")]
-#[hot_lib_reloader::hot_module(dylib = "systems")]
-mod amassment_dev_systems_hot {
+#[hot_lib_reloader::hot_module(dylib = "system_evolution")]
+mod system_evolution_hot {
     use bevy::prelude::*;
-    hot_functions_from_file!("../amassment_dev_systems/src/lib.rs");
+    use bevy_rapier3d::prelude::*;
+    use system_evolution::*;
+    hot_functions_from_file!("system_evolution/src/lib.rs");
 }
 
 fn main() {

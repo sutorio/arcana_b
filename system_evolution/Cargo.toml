@@ -1,5 +1,5 @@
 [package]
-name = "amassment_dev_systems"
+name = "system_evolution"
 version = "0.0.0"
 edition = "2021"
 
@@ -9,4 +9,3 @@ crate-type = ["rlib", "dylib"]
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy.git" }
 bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
-

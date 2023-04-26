@@ -61,5 +61,5 @@ It is still useful enough for it to be valuable.
 
 - TODO: ensure that it only runs when relevant code is changed: currently it reruns on everything, so if (eg) the .gitignore file is changed the code reruns.
 - TODO: is it possible to remove reloading as a feature & still get LSP completion in the main function? Even if not, need to set flags to allow dead code.
-- TODO: ensure this part of the overall project is private in terms of publishing; it must be committed, but will never be released. It is a playground, doesn't need to be versionaed or anything.### `amassment`
+- TODO: ensure this part of the overall project is private in terms of publishing; it must be committed, but will never be released. It is a playground, doesn't need to be versioned or anything.
 

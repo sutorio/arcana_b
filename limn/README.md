@@ -44,7 +44,13 @@ NOTE: forked [here](https://github.com/DanCouper/Shader-Editor), should I wish t
 ## Reference
 
 - [Bevy's shader examples](https://github.com/bevyengine/bevy/blob/main/examples/README.md#shaders)
+- [Noise primitives for WGSL/Rust/Bevy](https://github.com/johanhelsing/noisy_bevy)
+- [Bevy toon shader](https://github.com/tbillington/bevy_toon_shader)
+
+
 - [Hand drawn game, crude Moebius but excellent](https://youtu.be/jlKNOirh66E)
 - [Procedural nodes in Blender series](https://youtu.be/Uvc2P911rZk)
 - [Inigo Quilez articles index](https://iquilezles.org/articles/)
 - [Godot shaders site](https://godotshaders.com/)
+
+- [country-slice](https://github.com/anopara/country-slice): this is afaics the prototype for [Tiny Glade](https://pouncelight.games/tiny-glade/)

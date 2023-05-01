@@ -1,22 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use leafwing_input_manager::prelude::*;
-
-#[cfg(not(feature = "reload"))]
 use system_evolution::*;
-#[cfg(feature = "reload")]
-use system_evolution_hot::*;
-
-#[allow(unused_imports)]
-#[cfg(feature = "reload")]
-#[hot_lib_reloader::hot_module(dylib = "system_evolution")]
-mod system_evolution_hot {
-    use bevy::prelude::*;
-    use bevy_rapier3d::prelude::*;
-    use leafwing_input_manager::prelude::*;
-    use system_evolution::*;
-    hot_functions_from_file!("system_evolution/src/lib.rs");
-}
 
 fn main() {
     App::new()

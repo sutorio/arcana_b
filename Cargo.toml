@@ -25,6 +25,7 @@ opt-level = 3
 bevy = { git = "https://github.com/bevyengine/bevy.git" }
 bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
 hot-lib-reloader = { version = "0.6.5", optional = true }
+leafwing-input-manager = { git = "https://github.com/sutorio/leafwing-input-manager.git" }
 system_evolution = { path = "./system_evolution" } 
 
 [features]

@@ -9,3 +9,4 @@ crate-type = ["rlib", "dylib"]
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy.git" }
 bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
+leafwing-input-manager = { git = "https://github.com/sutorio/leafwing-input-manager.git" }

@@ -43,14 +43,14 @@ pub fn setup_ground(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let width = 5.;
+    let width = 10.;
     let height = 0.1;
 
     commands.spawn((
         Ground,
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Plane::from_size(width))),
-            material: materials.add(Color::TEAL.into()),
+            material: materials.add(Color::rgb_u8(216, 216, 216).into()),
             ..default()
         },
         RigidBody::Fixed,
@@ -71,9 +71,48 @@ pub fn setup_example_object(
         ExampleObject,
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            material: materials.add(Color::rgb_u8(89, 89, 89).into()),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0),
             ..default()
         },
     ));
+}
+
+#[no_mangle]
+pub fn primitive_movement(
+    mut query: Query<&mut Transform, With<ExampleObject>>,
+    keyboard_input: Res<Input<KeyCode>>,
+) {
+    let mut transform = query.single_mut();
+    let forward_vector = transform.forward();
+
+    for key in keyboard_input.get_pressed() {
+        match key {
+            KeyCode::Up => {
+                transform.translation -= forward_vector * 0.01;
+            }
+            KeyCode::Down => {
+                transform.translation += forward_vector * 0.01;
+            }
+            KeyCode::Left => {
+                transform.rotate_local_y(-0.0175);
+            }
+            KeyCode::Right => {
+                transform.rotate_local_y(0.0175);
+            }
+            _ => return,
+        }
+    }
+
+    // if keyboard_input.pressed(KeyCode::Left) {
+    //     // 1 degree
+    //     transform.rotate_local_y(-0.0175);
+    // }
+    // if keyboard_input.pressed(KeyCode::Right) {
+    //     // 1 degree
+    //     transform.rotate_local_y(0.0175);
+    // }
+    // TODO: reset
+    //if keyboard_input.pressed(KeyCode::Return) {
+    //}
 }

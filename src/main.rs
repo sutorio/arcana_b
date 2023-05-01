@@ -18,7 +18,7 @@ mod system_evolution_hot {
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::rgb(0.5, 0.5, 0.9)))
+        .insert_resource(ClearColor(Color::rgb_u8(223, 156, 156)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Bevy development playground with hot reloading".into(),
@@ -37,6 +37,7 @@ fn main() {
                 setup_light,
             ),
         )
+        .add_systems(Update, primitive_movement)
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }

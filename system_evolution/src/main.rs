@@ -8,19 +8,23 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb_u8(223, 156, 156)))
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Bevy development playground with hot reloading".into(),
+                title: "Bevy development playground".into(),
                 ..default()
             }),
             ..default()
         }))
         .add_plugin(InputManagerPlugin::<MovementAction>::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        // .add_plugin(RapierDebugRenderPlugin::default())
+        .add_plugin(RapierDebugRenderPlugin {
+            always_on_top: true,
+            ..default()
+        })
         .add_systems(
             Startup,
             (
-                setup_ground,
+                setup_base_environment,
                 setup_controlled_actor,
+                setup_obstacles,
                 setup_camera,
                 setup_light,
             ),

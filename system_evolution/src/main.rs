@@ -13,7 +13,7 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugin(InputManagerPlugin::<MovementAction>::default())
+        .add_plugin(InputManagerPlugin::<InputAction>::default())
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin {
             always_on_top: true,

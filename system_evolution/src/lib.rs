@@ -60,15 +60,6 @@ pub fn setup_base_environment(
     ));
 }
 
-// This is the list of "things in the game I want to be able to do based on input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
-pub enum MovementAction {
-    Forward,
-    Backward,
-    Left,
-    Right,
-}
-
 #[derive(Component)]
 pub struct Obstacle;
 
@@ -90,6 +81,18 @@ pub fn setup_obstacles(
     ));
 }
 
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+pub enum InputAction {
+    Move,
+}
+
+// #[derive(Component)]
+// pub struct Locomotion {
+//     max_speed: f32,
+//     acceleration: f32,
+//     max_acceleration_force: f32,
+// }
+
 #[derive(Component)]
 pub struct ControlledActor;
 
@@ -110,14 +113,18 @@ pub fn setup_controlled_actor(
             transform: Transform::from_xyz(0.0, 1.0, 0.0),
             ..default()
         },
-        InputManagerBundle::<MovementAction> {
-            action_state: ActionState::default(),
-            input_map: InputMap::new([
-                (KeyCode::Up, MovementAction::Forward),
-                (KeyCode::Down, MovementAction::Backward),
-                (KeyCode::Left, MovementAction::Left),
-                (KeyCode::Right, MovementAction::Right),
-            ]),
+        InputManagerBundle::<InputAction> {
+            input_map: InputMap::new([(
+                VirtualDPad {
+                    up: KeyCode::Up.into(),
+                    right: KeyCode::Right.into(),
+                    down: KeyCode::Down.into(),
+                    left: KeyCode::Left.into(),
+                },
+                InputAction::Move,
+            )])
+            .build(),
+            ..default()
         },
     ));
 }
@@ -127,38 +134,21 @@ pub fn controlled_movement(
         (
             &mut Transform,
             &mut KinematicCharacterController,
-            &ActionState<MovementAction>,
+            &ActionState<InputAction>,
         ),
         With<ControlledActor>,
     >,
     time: Res<Time>,
 ) {
     let (mut transform, mut controller, action_state) = query.single_mut();
-    // let forward_vector = transform.forward();
+    let forward_vector = transform.forward();
+    if let Some(dual_axis_data) = action_state.action_data(InputAction::Move).axis_pair {
+        let forward_speed = dual_axis_data.y() * 5.0 * time.delta_seconds();
 
-    for action in action_state.get_pressed() {
-        use MovementAction::*;
-        // Which way is the mesh facing?
-        let forward_vector = transform.forward();
-
-        match action {
-            Forward => {
-                let forward_speed =
-                    -action_state.clamped_value(action) * 5.0 * time.delta_seconds();
-                controller.translation = match controller.translation {
-                    Some(v) => Some(v + (forward_vector * forward_speed)),
-                    None => Some(Vec3::ZERO + (forward_vector * forward_speed)),
-                }
-            }
-            Backward => {
-                let forward_speed = action_state.clamped_value(action) * 0.1 * time.delta_seconds();
-                controller.translation = match controller.translation {
-                    Some(v) => Some(v + (forward_vector * forward_speed)),
-                    None => Some(Vec3::ZERO),
-                }
-            }
-            Left => transform.rotate_local_y(-0.0175),
-            Right => transform.rotate_local_y(0.0175),
-        }
+        controller.translation = match controller.translation {
+            Some(v) => Some(v + (forward_vector * forward_speed)),
+            None => Some(Vec3::ZERO + (forward_vector * forward_speed)),
+        };
+        transform.rotate_local_y(dual_axis_data.x() * 0.0175);
     }
 }

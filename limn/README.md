@@ -40,6 +40,14 @@ Online WGSL shader editor (research project).
 NOTE: must be used in Chrome (or flags on FF need to be set to allow for the features required).
 NOTE: forked [here](https://github.com/DanCouper/Shader-Editor), should I wish to port and improve it.
 
+### [Tour of WGSL](https://google.github.io/tour-of-wgsl/)
+
+Intro, from Google, not perfect but anything helps.
+
+### [Texturelib.com](http://texturelib.com/)
+
+I like this, simple, good textures. HOWEVER I had an account, but I think it used my Yahoo email (now kaput).
+And no signups, so stuck at max 2 Textures per day.
 
 ## Reference
 
@@ -50,7 +58,10 @@ NOTE: forked [here](https://github.com/DanCouper/Shader-Editor), should I wish t
 
 - [Hand drawn game, crude Moebius but excellent](https://youtu.be/jlKNOirh66E)
 - [Procedural nodes in Blender series](https://youtu.be/Uvc2P911rZk)
+- [Autodesk Arnold tutorial -- absolutely not feasible as it's not a realtime renderer, but pinch techniques](https://arnoldrenderer.com/news/toon-shader-calder-moore/)
 - [Inigo Quilez articles index](https://iquilezles.org/articles/)
 - [Godot shaders site](https://godotshaders.com/)
 
 - [country-slice](https://github.com/anopara/country-slice): this is afaics the prototype for [Tiny Glade](https://pouncelight.games/tiny-glade/)
+
+

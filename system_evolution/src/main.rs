@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-use leafwing_input_manager::prelude::*;
+use system_evolution::input_indirection::ArcanaInputPlugin;
 use system_evolution::*;
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugin(InputManagerPlugin::<InputAction>::default())
+        .add_plugin(ArcanaInputPlugin)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin {
             always_on_top: true,
@@ -29,7 +29,7 @@ fn main() {
                 setup_light,
             ),
         )
-        .add_systems(Update, controlled_movement)
+        .add_systems(Update, (controlled_movement, camera_follow))
         .add_systems(Update, bevy::window::close_on_esc)
         .run();
 }

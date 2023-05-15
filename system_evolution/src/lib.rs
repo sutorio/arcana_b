@@ -3,6 +3,7 @@ use bevy_rapier3d::prelude::*;
 use input_indirection::MovementInput;
 
 pub mod input_indirection;
+pub mod playground;
 
 #[derive(Component)]
 pub struct MainCamera;
@@ -37,33 +38,6 @@ pub fn setup_light(mut commands: Commands) {
 }
 
 #[derive(Component)]
-pub struct Ground;
-
-pub fn setup_base_environment(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let ground_size = 10.;
-    let ground_height = 0.1;
-
-    commands.spawn((
-        Ground,
-        Collider::cuboid(ground_size / 2.0, ground_height / 2.0, ground_size / 2.0),
-        // TransformBundle::from(Transform::from_xyz(0.0, -ground_height, 0.0)),
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Box::new(
-                ground_size,
-                ground_height,
-                ground_size,
-            ))),
-            material: materials.add(Color::rgba_u8(216, 216, 216, 255).into()),
-            ..default()
-        },
-    ));
-}
-
-#[derive(Component)]
 pub struct Obstacle;
 
 pub fn setup_obstacles(
@@ -85,7 +59,7 @@ pub fn setup_obstacles(
 }
 
 #[derive(Component)]
-pub struct ControlledActor;
+pub struct Actor;
 
 #[derive(Component)]
 pub struct ActorMovement {
@@ -104,23 +78,21 @@ impl Default for ActorMovement {
     }
 }
 
-pub fn setup_controlled_actor(
+pub fn setup_actor(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     commands.spawn((
         ActorMovement::default(),
-        ControlledActor,
+        Actor,
         Collider::cuboid(0.5, 0.5, 0.5),
-        GravityScale::default(),
-        KinematicCharacterController::default(),
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-            material: materials.add(Color::rgba_u8(89, 89, 89, 255).into()),
-            transform: Transform::from_xyz(0.0, 1.0, 0.0),
-            ..default()
+        Damping {
+            linear_damping: 1.5,
+            angular_damping: 0.5,
         },
+        // GravityScale::default(),
+        KinematicCharacterController::default(),
         RigidBody::KinematicVelocityBased,
         Velocity::zero(),
     ));
@@ -129,38 +101,20 @@ pub fn setup_controlled_actor(
 // const MAX_SPEED: f32 = 10.0;
 
 pub fn controlled_movement(
-    mut query: Query<(&mut ActorMovement, &mut Transform, &mut Velocity), With<ControlledActor>>,
-    movement_input: Res<MovementInput>,
+    mut query: Query<(&mut ActorMovement, &mut Transform, &mut Velocity), With<Actor>>,
+    input: Res<MovementInput>,
     time: Res<Time>,
 ) {
     // THere will only ever be one controlled character (as things stand):
-    let (mut actor_movement, mut transform, mut velocity) = query.single_mut();
+    let (mover, mut transform, mut vel) = query.single_mut();
 
-    let speed = (actor_movement.speed
-        + (if movement_input.is_held {
-            100.0
-        } else {
-            -100.0
-        }))
-    .clamp(0.0, actor_movement.max_speed);
-
-    velocity.linvel = (transform.forward() * movement_input.y_axis) * speed * time.delta_seconds();
-    transform
-        .rotate_y(movement_input.x_axis * actor_movement.rotation_speed * time.delta_seconds());
-    actor_movement.speed = speed;
-    // let forward_vector = transform.forward();
-    // let forward_speed = movement_input.y_axis * 5.0 * time.delta_seconds();
-
-    // controller.translation = match controller.translation {
-    //     Some(v) => Some(v + (forward_vector * forward_speed)),
-    //     None => Some(Vec3::ZERO + (forward_vector * forward_speed)),
-    // };
-    // transform.rotate_local_y(movement_input.x_axis * 0.0175);
+    vel.linvel = (transform.forward() * input.y_axis) * mover.max_speed * time.delta_seconds();
+    transform.rotate_y(input.x_axis * mover.rotation_speed * time.delta_seconds());
 }
 
 pub fn camera_follow(
     mut actor_cam_set: ParamSet<(
-        Query<(Option<&KinematicCharacterControllerOutput>, &Transform), With<ControlledActor>>,
+        Query<(Option<&KinematicCharacterControllerOutput>, &Transform), With<Actor>>,
         Query<&mut Transform, With<MainCamera>>,
     )>,
 ) {

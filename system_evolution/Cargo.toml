@@ -3,17 +3,9 @@ name = "system_evolution"
 version = "0.0.0"
 edition = "2021"
 
-# IMPORTANT: Rust's compilation speed will cause acute frustration during rapid iteration phase of dev. [READ THIS](https://bevyengine.org/learn/book/getting-started/setup/).
-# NOTE: Enables a small amount of optimization in debug mode. [READ THIS](https://bevy-cheatbook.github.io/pitfalls/performance.html).
-# NOTE: The flag improves compile times, but reduces the amount of debug info to 'line number tables only'. In most cases the gains are negligible, but if you are on macos and have slow compile times you should see significant gains.
-[profile.dev]
-opt-level = 1
-
-# NOTE: Enables high optimizations for dependencies only (incl. Bevy):
-[profile.dev.package."*"]
-opt-level = 3
-
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy.git" }
 bevy_rapier3d = { git = "https://github.com/flmng0/bevy_rapier.git", features = ["debug-render-3d", "simd-nightly"]}
 leafwing-input-manager = { git = "https://github.com/sutorio/leafwing-input-manager.git" }
+serde = "1.0.162"
+spew = "0.2.2"

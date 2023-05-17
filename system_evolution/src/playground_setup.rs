@@ -10,13 +10,14 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 
+
+/// Initialises the stage upon which the actors perform, and tosses some obstacles onto it.
 pub struct PlaygroundSetupPlugin;
 
 impl Plugin for PlaygroundSetupPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(ClearColor(Color::lcha(71.0, 28.0, 23.0, 0.0)))
-            .add_systems(Startup, spawn_play_ground);
+            .add_systems(Startup, (spawn_play_ground, spawn_obstacles).chain());
     }
 }
 
@@ -39,6 +40,27 @@ fn spawn_play_ground(
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Box::new(GROUND_SIZE, GROUND_HEIGHT, GROUND_SIZE))),
             material: materials.add(Color::rgba_u8(216, 216, 216, 255).into()),
+            ..default()
+        },
+    ));
+}
+
+#[derive(Component)]
+pub struct Obstacle;
+
+pub fn spawn_obstacles(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.spawn((
+        Obstacle,
+        RigidBody::Dynamic,
+        Collider::cuboid(0.5, 0.5, 0.5),
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::rgba_u8(89, 89, 89, 255).into()),
+            transform: Transform::from_xyz(0.0, 1.0, 0.0),
             ..default()
         },
     ));

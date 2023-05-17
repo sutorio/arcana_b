@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
-use crate::fn_plugin::FnPluginExt;
 use leafwing_input_manager::prelude::*;
 use spew::prelude::*;
 
@@ -23,11 +22,14 @@ use spew::prelude::*;
 // *Kinematic velocity-based* - has a rigidbody & a character controller, velocity adjustments determine movement.
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
-pub(crate) enum ActorAction {
+pub enum ActorAction {
     Move,
 }
 
-pub(crate) fn actor_input_plugin(app: &mut App) {
+pub struct ActorInputPlugin;
+
+impl Plugin for ActorInputPlugin {
+    fn build(&self, app: &mut App) {
     let mut input_map = InputMap::default();
 
     input_map.insert(
@@ -48,20 +50,8 @@ pub(crate) fn actor_input_plugin(app: &mut App) {
         .add_plugin(InputManagerPlugin::<ActorAction>::default())
         .insert_resource(input_map);
 }
-
-fn update_movement_input(
-    raw_input: Res<ActionState<RawInputAction>>,
-    mut movement_input: ResMut<MovementInput>,
-) {
-    match raw_input.action_data(RawInputAction::Move).axis_pair {
-        Some(dual_axis_data) => {
-            movement_input.update_active_dpad_move(dual_axis_data.x(), dual_axis_data.y());
-        }
-        None => {
-            movement_input.update_inactive_dpad_move();
-        }
-    }
 }
+
 
 /// A player can only control one actor at a time, this component should be switched between the available actors.
 // pub struct CurrentlyControlledActor;
@@ -74,21 +64,30 @@ pub enum Actors {
 }
 
 
-pub fn actor_spawn_plugin(app: &mut App) {
-    app
-        .add_plugin(SpewPlugin::<Actors, Transform>::default())
-        .add_spawners(
-            (Actors::NoPhysics, spawn_no_physics_actor),
-            (Actors::KinematicVelocityBased, spawn_kinematic_velocity_based_actor),
-        )
-        .add_systems(Startup, spawn_actors);
-        .add_systems(Update, no_physics_actor_movememt);
+pub struct ActorSpawnPlugin;
+
+impl Plugin for ActorSpawnPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_plugin(SpewPlugin::<Actors, Transform>::default())
+            .add_spawners(
+                (Actors::NoPhysics, spawn_no_physics_actor),
+                (Actors::KinematicVelocityBased, spawn_kinematic_velocity_based_actor),
+            )
+            .add_systems(Startup, spawn_actors)
+            .add_systems(Update, no_physics_actor_movememt);
+    }
 }
 
 #[derive(Component)]
 pub struct NoPhysicsActor;
 
-fn spawn_no_physics_actor(In(transform): In<Transform>, mut commands: Commands) {
+fn spawn_no_physics_actor(
+    In(transform): In<Transform>, 
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     commands
         .spawn((
             Name::new("No physics"),
@@ -104,7 +103,7 @@ fn spawn_no_physics_actor(In(transform): In<Transform>, mut commands: Commands) 
 
 fn no_physics_actor_movement(
     mut query: Query<(&ActionState<ActorAction>, &mut Transform), With<NoPysicsActor>>,
-    input: Res<InputMap>,
+    input: Res<InputMap<ActorAction>>,
     time: Res<Time>,
 ) {
     let (action_state, mut transform) = query.single_mut();
@@ -124,7 +123,12 @@ fn no_physics_actor_movement(
 #[derive(Component)]
 pub struct KinematicVelocityBasedActor;
 
-fn spawn_kinematic_velocity_based_actor(In(transform): In<Transform>, mut commands: Commands) {
+fn spawn_kinematic_velocity_based_actor(
+    In(transform): In<Transform>, 
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
     commands
         .spawn((
             Name::new("Partial physics (kinematic, velocity)"),

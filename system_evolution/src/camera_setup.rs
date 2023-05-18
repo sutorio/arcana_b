@@ -2,7 +2,7 @@
 //! 
 //! This is moving towards an emulation of a Godot camera attached to a spring arm.
 //! So the focus of the camera "arm" entity should be placed at the centre of the target
-//! (*ie* the currently controlled character). It's just a SpacialBundle. This provides
+//! (*ie* the currently controlled character). It's just a SpatialBundle. This provides
 //! the Transform component. Then attached as a child is the camera entity. It being a
 //! child means that the transform applied to it will be relative (move it up Y, 
 //! move it back X, look at the focus). Following Godot, what the camera also requires
@@ -11,6 +11,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use leafwing_input_manager::prelude::*;
+use super::events::FocusEvent;
 
 /// Initialises the orbit camera and its associated functionality
 pub struct OrbitCameraSetupPlugin;
@@ -21,8 +22,8 @@ impl Plugin for OrbitCameraSetupPlugin {
         app
             .init_resource::<OrbitCameraFocus>()
             .add_plugin(InputManagerPlugin::<OrbitCameraAction>::default())
-            .add_systems(Startup, spawn_orbit_camera)
-            .add_systems(Update, orbit_camera_arm_movement);
+            .add_systems(Startup, (spawn_default_camera, spawn_orbit_camera))
+            .add_systems(Update, (activate_orbit_camera, update_orbit_camera_position, orbit_camera_arm_movement).chain());
     }
 }
 
@@ -66,11 +67,25 @@ fn build_orbit_camera_control_mapping() -> InputMap<OrbitCameraAction> {
     );
 
     input_map.insert(
-        DualAxis::left_stick(),
+        DualAxis::right_stick(),
         OrbitCameraAction::Move
     );
 
     input_map
+}
+
+/// The default non-orbiting camera that shows the entire scene. Turned off once control
+/// passed to the orbit camera.
+#[derive(Component)]
+struct DefaultCamera;
+
+fn spawn_default_camera(
+    mut commands: Commands,
+) {
+    commands.spawn((
+        Camera3dBundle::default(),
+        DefaultCamera,
+    ));
 }
 
 /// The orbit camera itself.
@@ -103,6 +118,10 @@ fn spawn_orbit_camera(
 
     let camera = commands.spawn((
         Camera3dBundle {
+            camera: Camera { 
+                is_active: false,
+                ..default()
+            },
             transform: Transform {
                  translation: Vec3::new(-10.0, 5.0, 0.0),
                  ..default()
@@ -113,7 +132,42 @@ fn spawn_orbit_camera(
         OrbitCamera,
     )).id();
 
+    info!("Spawning orbit camera!");
     commands.entity(arm).push_children(&[camera]);
+}
+
+fn activate_orbit_camera(
+    mut focus_event: EventReader<FocusEvent>,
+    mut query_default_cam: Query<&mut Camera, (With<DefaultCamera>, Without<OrbitCamera>)>,
+    mut query_orbit_cam: Query<&mut Camera, (With<OrbitCamera>, Without<DefaultCamera>)>,
+    mut query_orbit_cam_arm: Query<&mut Transform, With<OrbitCameraArm>>,
+) {
+    let mut default_camera = query_default_cam.single_mut();
+    let mut orbit_camera = query_orbit_cam.single_mut();
+    let mut orbit_camera_arm_transform = query_orbit_cam_arm.single_mut();
+
+    for e in focus_event.iter() {
+        if let FocusEvent::FocusSwitched { position , y_rotation: _ } = e {
+            info!("Despawning default camera!");
+            default_camera.is_active = false;
+            info!("Activating orbit camera!");
+            orbit_camera_arm_transform.translation = *position;
+            orbit_camera.is_active = true;
+        }
+    }
+}
+
+fn update_orbit_camera_position(
+    mut focus_event: EventReader<FocusEvent>,
+    mut query: Query<&mut Transform, With<OrbitCameraArm>>,
+) {
+    let mut transform = query.single_mut();
+
+    for e in focus_event.iter() {
+        if let FocusEvent::FocusMoved { position , y_rotation: _ } = e {
+            transform.translation = *position;
+        }
+    } 
 }
 
 /// TODO: need to move camera in or out (using y-axis from axis pair)
@@ -127,10 +181,10 @@ fn orbit_camera_arm_movement(
 
     let (action_state, mut transform) = query.single_mut();
 
-    if action_state.pressed(OrbitCameraAction::Move) {
-        if let Some(axis_data) = action_state.clamped_axis_pair(OrbitCameraAction::Move) {
-            focus.current_rotation += axis_data.x() * time.delta_seconds();
-            transform.rotation = Quat::from_euler(ROTATION_SEQ, 0.0, focus.current_rotation, 0.0);
-        };
-    }
+        if action_state.pressed(OrbitCameraAction::Move) {
+            if let Some(axis_data) = action_state.clamped_axis_pair(OrbitCameraAction::Move) {
+                focus.current_rotation += axis_data.x() * time.delta_seconds();
+                transform.rotation = Quat::from_euler(ROTATION_SEQ, 0.0, focus.current_rotation, 0.0);
+            };
+        }
 }

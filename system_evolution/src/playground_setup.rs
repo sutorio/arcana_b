@@ -60,7 +60,7 @@ pub fn spawn_obstacles(
         PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgba_u8(89, 89, 89, 255).into()),
-            transform: Transform::from_xyz(0.0, 1.0, 0.0),
+            transform: Transform::from_xyz(5.0, 1.0, 5.0),
             ..default()
         },
     ));

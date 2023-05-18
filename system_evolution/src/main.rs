@@ -29,5 +29,6 @@ fn main() {
         .add_plugin(PhysicsSetupPlugin { rapier_debugging_enabled: true, rapier_debugging_lines_on_top: true })
         .add_plugin(PlaygroundSetupPlugin)
         .add_plugin(OrbitCameraSetupPlugin)
+        .add_plugin(ActorSetupPlugin)
         .run();
 }

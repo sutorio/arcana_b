@@ -1,4 +1,4 @@
-//! # Playground
+//! Playground
 //!
 //! `playround` is literally the playground environment in which the game
 //! exists. At root, it's a squat primitive shape with a collider attached,

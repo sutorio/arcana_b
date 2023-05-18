@@ -1,3 +1,4 @@
+pub mod actor_setup;
 pub mod application_setup;
 pub mod camera_setup;
 pub mod events;
@@ -17,6 +18,8 @@ use physics_setup::*;
 use camera_setup::*;
 // TODO: need *all* of this configured via an external resource, need to then be able to adjust this resource in-game:
 use playground_setup::*;
+
+use actor_setup::*;
 
 // TODO: EVENTS and GLOBAL RESOURCES 
 fn main() {

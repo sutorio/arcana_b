@@ -1,190 +1,210 @@
 //! WIP: The core camera.
-//! 
+//!
 //! This is moving towards an emulation of a Godot camera attached to a spring arm.
 //! So the focus of the camera "arm" entity should be placed at the centre of the target
 //! (*ie* the currently controlled character). It's just a SpatialBundle. This provides
 //! the Transform component. Then attached as a child is the camera entity. It being a
-//! child means that the transform applied to it will be relative (move it up Y, 
+//! child means that the transform applied to it will be relative (move it up Y,
 //! move it back X, look at the focus). Following Godot, what the camera also requires
-//! is a collider: this can then be used to adjust the "arm". Also need to look at some 
+//! is a collider: this can then be used to adjust the "arm". Also need to look at some
 //! spring physics.
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
-use leafwing_input_manager::prelude::*;
-use super::events::FocusEvent;
+use std::f32::consts::PI;
 
-/// Initialises the orbit camera and its associated functionality
-pub struct OrbitCameraSetupPlugin;
+/// Initialises the blend camera and its associated functionality
+pub struct OrbitCameraSetupPlugin {
+    pub initial_position: Vec3,
+    pub initial_framing: Vec2,
+}
 
 impl Plugin for OrbitCameraSetupPlugin {
     fn build(&self, app: &mut App) {
-        
         app
-            .init_resource::<OrbitCameraFocus>()
-            .add_plugin(InputManagerPlugin::<OrbitCameraAction>::default())
-            .add_systems(Startup, (spawn_default_camera, spawn_orbit_camera))
-            .add_systems(Update, (activate_orbit_camera, update_orbit_camera_position, orbit_camera_arm_movement).chain());
+            .insert_resource(OrbitCameraParams {
+                distance: -5.0,
+                framing: self.initial_framing,
+                pitch: 10.0,
+                tracking_position: self.initial_position,
+                yaw: 0.0,
+            })
+            .add_systems(Startup, spawn_orbit_camera)
+            .add_systems(Update, log_camera_updates)
+            .add_systems(Update, (compute_camera_blend, apply_blend_to_params, apply_params_to_camera).chain());
     }
 }
 
-/// The resource that defines where the `OrbitCamera` is centred: it is held in a resource
-/// to allow it to be updated depending on the current focus.
-#[derive(Resource)]
-pub struct OrbitCameraFocus {
-    pub target_position: Vec3,
-    pub current_rotation: f32,
-}
-
-// FIXME: This is a placeholder.
-impl Default for OrbitCameraFocus {
-    fn default() -> Self {
-        info!("START: current rotation: {:?}", Quat::IDENTITY);
-        Self {
-            target_position: Vec3::new(0.0, 1.0, 0.0),
-            current_rotation: 0.0,
-        }
-    }
-}
-
-/// Input actions related to the orbit camera (TODO: link Leafwing input manager docs).
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
-pub enum OrbitCameraAction {
-    Move,
-}
-
-/// Input mapping for the orbit camera controls (TODO: link Leafwing input manager).
-fn build_orbit_camera_control_mapping() -> InputMap<OrbitCameraAction> {
-    let mut input_map = InputMap::default();
-
-    input_map.insert(
-        VirtualDPad {
-            up: KeyCode::Up.into(),
-            right: KeyCode::Right.into(),
-            down: KeyCode::Down.into(),
-            left: KeyCode::Left.into(),
-        },
-        OrbitCameraAction::Move,
-    );
-
-    input_map.insert(
-        DualAxis::right_stick(),
-        OrbitCameraAction::Move
-    );
-
-    input_map
-}
-
-/// The default non-orbiting camera that shows the entire scene. Turned off once control
-/// passed to the orbit camera.
-#[derive(Component)]
-struct DefaultCamera;
-
-fn spawn_default_camera(
-    mut commands: Commands,
-) {
-    commands.spawn((
-        Camera3dBundle::default(),
-        DefaultCamera,
-    ));
-}
-
-/// The orbit camera itself.
 #[derive(Component)]
 pub struct OrbitCamera;
 
-/// The "arm" upon which the camera sits. The arm rotates, the camera looks at the focus of the arm.
-#[derive(Component)]
-pub struct OrbitCameraArm;
-
-/// Initial setup for the orbit camera.
-fn spawn_orbit_camera(
-    mut commands: Commands,
-    focus: Res<OrbitCameraFocus>,
-) {
-    let arm = commands.spawn((
-        OrbitCameraArm,
-        InputManagerBundle::<OrbitCameraAction> {
-            input_map: build_orbit_camera_control_mapping(),
-            ..default()
-        },
-        SpatialBundle {
-            transform: Transform {
-                translation: focus.target_position,
-                ..default()
-            },
-            ..default()
-        },
-    )).id();
-
-    let camera = commands.spawn((
-        Camera3dBundle {
-            camera: Camera { 
-                is_active: false,
-                ..default()
-            },
-            transform: Transform {
-                 translation: Vec3::new(-10.0, 5.0, 0.0),
-                 ..default()
-            }.looking_at(focus.target_position, Vec3::Y),
-            ..default()
-        },
-        Collider::ball(1.0),
-        OrbitCamera,
-    )).id();
-
-    info!("Spawning orbit camera!");
-    commands.entity(arm).push_children(&[camera]);
+#[derive(Resource, Debug, Default)]
+pub struct OrbitCameraParams {
+	/// Offset between the camera and the player
+	pub distance: f32,
+	/// 2D screen position of the player
+	pub framing: Vec2,
+	/// Vertical camera tilt
+	pub pitch: f32,
+	/// 3D world position of the player
+    pub tracking_position: Vec3,
+	/// Horizontal camera pan
+	pub yaw: f32,
 }
 
-fn activate_orbit_camera(
-    mut focus_event: EventReader<FocusEvent>,
-    mut query_default_cam: Query<&mut Camera, (With<DefaultCamera>, Without<OrbitCamera>)>,
-    mut query_orbit_cam: Query<&mut Camera, (With<OrbitCamera>, Without<DefaultCamera>)>,
-    mut query_orbit_cam_arm: Query<&mut Transform, With<OrbitCameraArm>>,
-) {
-    let mut default_camera = query_default_cam.single_mut();
-    let mut orbit_camera = query_orbit_cam.single_mut();
-    let mut orbit_camera_arm_transform = query_orbit_cam_arm.single_mut();
+impl OrbitCameraParams {
+    /// Inverse-compute the camera parameters from the current camera and the target position.
+    fn derive(
+        camera_projection: &PerspectiveProjection,
+        camera_transform: &Transform,
+        tracking_position: Vec3,
+    ) -> Self {
+        let camera_position = camera_transform.translation;
+        let camera_rotation = camera_transform.rotation;
 
-    for e in focus_event.iter() {
-        if let FocusEvent::FocusSwitched { position , y_rotation: _ } = e {
-            info!("Despawning default camera!");
-            default_camera.is_active = false;
-            info!("Activating orbit camera!");
-            orbit_camera_arm_transform.translation = *position;
-            orbit_camera.is_active = true;
+        // compute pitch and yaw values from the camera rotation
+        let (pitch, yaw, _) = camera_rotation.to_euler(EulerRot::XYZ);
+
+        // compute distance from the camera position and the tracking position
+        let tracking_offset = tracking_position - camera_position;
+        let fwd = camera_rotation * Vec3::Z;
+        let distance = tracking_offset.dot(fwd);
+
+        // info!("COMPUTING FRAMING:");
+        // compute framing from the camera position and the tracking position
+        let camera_offset = camera_position - tracking_position;
+        // info!("Offset: {:?}", camera_offset);
+        let parallax = camera_rotation.inverse() * camera_offset;
+        // info!("Parallax: {:?}", parallax);
+        let tan_fov_y = (0.5 * (std::f32::consts::PI / 180.0) * camera_projection.fov).tan();
+        // info!("tan(fov_y): {:?}", tan_fov_y);
+        let tan_fov_x = tan_fov_y * camera_projection.aspect_ratio;
+        // info!("tan(fov_x): {:?}", tan_fov_x);
+        let screen_to_world = distance * Vec2::new(tan_fov_x, tan_fov_y);
+        // info!("Screen -> World: {:?}", screen_to_world);
+        let framing = Vec2::new(
+            (-parallax.x / screen_to_world.x).clamp(-1.0, 1.0),
+            (-parallax.y / screen_to_world.y).clamp(-1.0, 1.0),
+        );
+        // info!("Framing: {:?}", framing);
+        // info!(":END COMPUTING FRAMING");
+
+        Self {
+            distance,
+            framing,
+            pitch,
+            tracking_position,
+            yaw,
         }
     }
 }
 
-fn update_orbit_camera_position(
-    mut focus_event: EventReader<FocusEvent>,
-    mut query: Query<&mut Transform, With<OrbitCameraArm>>,
-) {
-    let mut transform = query.single_mut();
-
-    for e in focus_event.iter() {
-        if let FocusEvent::FocusMoved { position , y_rotation: _ } = e {
-            transform.translation = *position;
-        }
-    } 
+fn spawn_orbit_camera(mut commands: Commands, params: Res<OrbitCameraParams>) {
+    commands.spawn((
+        OrbitCamera,
+        Camera3dBundle {
+            transform: Transform::from_translation(params.tracking_position).looking_at(Vec3::ZERO, Vec3::Y),
+            ..default()
+        },
+    ));
 }
 
-/// TODO: need to move camera in or out (using y-axis from axis pair)
-/// TODO: when the target moves, the rotaion needs to *smoothly* move back to its original position (HOW THE FUCK DO I DO THIS?)
-fn orbit_camera_arm_movement(
-    mut query: Query<(&ActionState<OrbitCameraAction>, &mut Transform), With<OrbitCameraArm>>,
-    mut focus: ResMut<OrbitCameraFocus>,
+fn log_camera_updates(
+    query: Query<&Transform, (With<OrbitCamera>, Changed<Transform>)>,
+    params: Res<OrbitCameraParams>
+) {
+    for transform in query.iter() {
+        info!("Camera transform: {:?}", transform);
+    }
+
+    if params.is_changed() {
+        info!("Camera params: {:?}", params);
+    }
+}
+
+/// The CameraBlend is local resource used internally to track the difference between previous and
+/// current "parameter spaces". It holds the same values as the CameraParams component, less the
+/// tracking_position (which comes from the world). By saving the values separately, we
+/// can use them to compute the camera transform in the next frame.
+#[derive(Default)]
+struct CameraBlend {
+    framing: Vec2,
+    distance: f32,
+    pitch: f32,
+    yaw: f32,
+}
+
+
+fn compute_camera_blend(
+    camera: Query<(&Projection, &Transform), With<OrbitCamera>>,
+    params: Res<OrbitCameraParams>,
+    mut blend: Local<CameraBlend>
+) {
+    if params.is_changed() || params.is_added() {
+        for (projection, transform) in camera.iter() {
+            if let Projection::Perspective(camera_projection) = projection {
+                let old_params = OrbitCameraParams::derive(&camera_projection, transform, params.tracking_position);
+
+                blend.distance = old_params.distance - params.distance;
+                blend.framing = old_params.framing - params.framing;
+                blend.pitch = old_params.pitch - params.pitch;
+                // NOTE: yaw is a special case because it wraps around. If this isn't done, will get wierd jumps.
+                blend.yaw = match old_params.yaw - params.yaw {
+                    yaw if yaw > 180.0 => yaw - 360.0,
+                    yaw if yaw < -180.0 => yaw + 360.0,
+                    yaw => yaw
+                };
+            }
+        }
+    }
+}
+
+fn apply_blend_to_params(
+    mut params: ResMut<OrbitCameraParams>,
+    blend: Local<CameraBlend>,
     time: Res<Time>,
 ) {
-    const ROTATION_SEQ: EulerRot = EulerRot::XYZ;
+        let multi = 1.0 - time.delta_seconds().clamp(0.0, 1.0);
 
-    let (action_state, mut transform) = query.single_mut();
+        params.distance += blend.distance * multi;
+        params.framing += blend.framing * multi;
+        params.pitch += blend.pitch * multi;
+        params.yaw += blend.yaw * multi;
+}
 
-        if action_state.pressed(OrbitCameraAction::Move) {
-            if let Some(axis_data) = action_state.clamped_axis_pair(OrbitCameraAction::Move) {
-                focus.current_rotation += axis_data.x() * time.delta_seconds();
-                transform.rotation = Quat::from_euler(ROTATION_SEQ, 0.0, focus.current_rotation, 0.0);
-            };
+fn apply_params_to_camera(
+    mut camera: Query<(&Projection, &mut Transform), With<OrbitCamera>>,
+    params: Res<OrbitCameraParams>,
+) {
+    if params.is_changed() {
+        for (projection, mut transform) in camera.iter_mut() {
+            if let Projection::Perspective(camera_projection) = projection {
+                // Compute "local" offset relative to our view rotation
+                // REVIEW: why `tan`, what does `tan` do here?
+                let tan_fov_y = (0.5 * (PI / 180.0) * camera_projection.fov).tan();
+                let tan_fov_x = tan_fov_y * camera_projection.aspect_ratio;
+                let local_offset = Vec3::new(
+                    params.distance * tan_fov_x * params.framing.x,
+                    params.distance * tan_fov_y * params.framing.y,
+                    params.distance
+                );
+
+                // Compute rotation, and thence translation. Just for reference:
+                //
+                // - pitch is direction of wing (y),
+                // - yaw is direction of ground (z),
+                // - roll is forward motion (x)
+                //
+                // REFERENCE: https://www.mecharithm.com/explicit-representations-orientation-robotics-roll-pitch-yaw-angles/
+                let rotation = Quat::from_euler(
+                    EulerRot::XYZ,
+                    params.pitch,
+                    params.yaw,
+                    0.0,
+                );
+                let translation = params.tracking_position - rotation * local_offset;
+
+                transform.translation = translation;
+                transform.rotation = rotation;
+            }
         }
+    }
 }

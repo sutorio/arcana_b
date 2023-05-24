@@ -3821,15 +3821,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spew"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d5eb764aca85ec14d1b7c8d497d03ed119260391364ba9f70b9be9735eaf0f9"
-dependencies = [
- "bevy 0.10.1",
-]
-
-[[package]]
 name = "spirv"
 version = "0.2.0+1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3901,7 +3892,6 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_rapier3d",
  "leafwing-input-manager",
- "spew",
 ]
 
 [[package]]

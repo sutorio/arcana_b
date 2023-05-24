@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
 use leafwing_input_manager::prelude::*;
-use super::events::FocusEvent;
+use super::camera_setup::OrbitCameraParams;
 
 pub struct ActorSetupPlugin;
 
@@ -52,7 +52,7 @@ pub struct ControlledActor;
 
 fn spawn_actor(
     mut commands: Commands,
-    mut focus_event: EventWriter<FocusEvent>,
+    mut camera_params: ResMut<OrbitCameraParams>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -79,17 +79,12 @@ fn spawn_actor(
         )
     );
 
-    // FIXME: separate this from this system. Once there are multiple actors, just
-    // want to switch focus between them. So when the `ControlledActor` component is
-    // added, *that* is when this event should be fired, not on spawn. Spawn is for
-    // getting a *possible* controlled actor into the world, a second system should
-    // handle gettting player control over that actor.
-     focus_event.send(FocusEvent::FocusSwitched { position: spawn_location, y_rotation: 0.0 });
+    camera_params.tracking_position = spawn_location;
 }
 
 
 fn move_actor(
-    mut focus_event: EventWriter<FocusEvent>,
+    mut camera_params: ResMut<OrbitCameraParams>,
     movement_input_action: Res<ActionState<ActorAction>>,
     mut query: Query<(&mut Transform, &mut Velocity), With<ControlledActor>>,
     time: Res<Time>,
@@ -100,7 +95,7 @@ fn move_actor(
         if let Some(axis_data) = movement_input_action.clamped_axis_pair(ActorAction::Move) {
             velocity.linvel = transform.forward() * axis_data.y() * 500.0 * time.delta_seconds();
             transform.rotate_y(axis_data.x() * time.delta_seconds());
-            focus_event.send(FocusEvent::FocusMoved { position: transform.translation, y_rotation: 0.0 });
+            camera_params.tracking_position = transform.translation * time.delta_seconds();
         };
     }
 }

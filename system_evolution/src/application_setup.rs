@@ -16,7 +16,7 @@ impl Plugin for ApplicationSetupPlugin {
             .insert_resource(ClearColor(self.base_colour))
             .add_plugins(DefaultPlugins
                 .set(WindowPlugin {
-                    primary_window: Some(Window { 
+                    primary_window: Some(Window {
                         title: self.title.clone(),
                         ..default()
                     }),

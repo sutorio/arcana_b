@@ -21,14 +21,14 @@ use playground_setup::*;
 
 use actor_setup::*;
 
-// TODO: EVENTS and GLOBAL RESOURCES 
+// TODO: EVENTS and GLOBAL RESOURCES
 fn main() {
     App::new()
         .add_plugin(ApplicationSetupPlugin { title: "Arcana B".into(), base_colour: Color::lcha(71.0, 28.0, 23.0, 1.0) })
         .add_plugin(EventBusPlugin)
         .add_plugin(PhysicsSetupPlugin { rapier_debugging_enabled: true, rapier_debugging_lines_on_top: true })
         .add_plugin(PlaygroundSetupPlugin)
-        .add_plugin(OrbitCameraSetupPlugin)
+        .add_plugin(OrbitCameraSetupPlugin { initial_position: Vec3::new(-2.0, 10.0, 10.0), initial_framing: Vec2::new(-0.5, -0.5) })
         .add_plugin(ActorSetupPlugin)
         .run();
 }
